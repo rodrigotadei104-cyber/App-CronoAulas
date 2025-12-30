@@ -53,6 +53,23 @@ Esta aplicação está pronta para ser publicada na Vercel:
 2. Nas configurações do projeto, adicione as mesmas variáveis de ambiente (`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`).
 3. O deploy será realizado automaticamente a cada push na branch principal.
 
+## 📱 Versão Mobile (Android/APK)
+
+Este projeto utiliza **Capacitor** para gerar a versão mobile.
+
+1. **Gerar Build Web**:
+   ```bash
+   npm run build
+   ```
+2. **Sincronizar com Android**:
+   ```bash
+   npx cap sync
+   ```
+3. **Gerar APK**:
+   Abra a pasta `android` no **Android Studio** e vá em `Build > Build Bundle(s) / APK(s) > Build APK(s)`.
+
+---
+
 ## 📄 Licença
 
 Este projeto é privado para uso da CronoAulas.
