@@ -50,6 +50,10 @@ interface ScheduleContextType {
   notification: AppNotification | null;
   showNotification: (message: string, type: 'success' | 'error' | 'info') => void;
   closeNotification: () => void;
+
+  // Workload Helpers
+  getSubjectProgress: (subjectName: string, courseName: string) => { current: number, total: number, percentage: number };
+  getCourseProgress: (courseName: string) => { current: number, total: number, percentage: number, finalized: boolean };
 }
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
@@ -531,6 +535,58 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [filteredAulas]);
 
+  // --- Workload Helpers Implementation ---
+
+  const parseWorkload = useCallback((str: string): number => {
+    if (!str) return 0;
+    // Handle formats like "80h", "10 h", "80"
+    const match = str.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  }, []);
+
+  const getSubjectProgress = useCallback((subjectName: string, courseName: string) => {
+    const subject = materias.find(m => m.nome === subjectName);
+    const total = subject ? parseWorkload(subject.cargaHoraria || '0h') : 0;
+
+    // Sum duration of ALL scheduled classes for this subject/course
+    let currentMinutes = 0;
+    aulas.forEach(aula => {
+      if (aula.materia === subjectName && aula.curso === courseName && aula.status !== 'cancelada') {
+        const start = parse(aula.horarioInicio, 'HH:mm', new Date());
+        const end = parse(aula.horarioFim, 'HH:mm', new Date());
+        const diff = differenceInMinutes(end, start);
+        if (!isNaN(diff)) currentMinutes += diff;
+      }
+    });
+
+    const currentHours = currentMinutes / 60;
+    const percentage = total > 0 ? Math.min((currentHours / total) * 100, 100) : 0;
+
+    return { current: currentHours, total, percentage };
+  }, [materias, aulas, parseWorkload]);
+
+  const getCourseProgress = useCallback((courseName: string) => {
+    const course = cursos.find(c => c.nome === courseName);
+    const total = course ? parseWorkload(course.cargaHoraria || '0h') : 0;
+
+    // Sum duration of ALL scheduled classes for this course
+    let currentMinutes = 0;
+    aulas.forEach(aula => {
+      if (aula.curso === courseName && aula.status !== 'cancelada') {
+        const start = parse(aula.horarioInicio, 'HH:mm', new Date());
+        const end = parse(aula.horarioFim, 'HH:mm', new Date());
+        const diff = differenceInMinutes(end, start);
+        if (!isNaN(diff)) currentMinutes += diff;
+      }
+    });
+
+    const currentHours = currentMinutes / 60;
+    const percentage = total > 0 ? Math.min((currentHours / total) * 100, 100) : 0;
+    const finalized = total > 0 && currentHours >= total;
+
+    return { current: currentHours, total, percentage, finalized };
+  }, [cursos, aulas, parseWorkload]);
+
   return (
     <ScheduleContext.Provider
       value={{
@@ -567,7 +623,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateAppSettings,
         notification,
         showNotification,
-        closeNotification
+        closeNotification,
+        getSubjectProgress,
+        getCourseProgress
       }}
     >
       {children}
