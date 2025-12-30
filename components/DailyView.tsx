@@ -246,7 +246,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ currentDate, aulas, onEdit
                       return (
                         <>
                           <div className="flex justify-between items-center text-[9px] text-gray-500">
-                            <span>Matéria: {subjectProg.current} / {subjectProg.total}h</span>
+                            <span>Matéria: {subjectProg.formattedCurrent} / {subjectProg.formattedTotal}</span>
                             <div className="w-12 h-1 bg-gray-100 rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-blue-500 transition-all duration-500"
@@ -256,7 +256,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ currentDate, aulas, onEdit
                           </div>
                           <div className="flex justify-between items-center text-[9px] font-medium text-gray-700">
                             <span className="flex items-center gap-1">
-                              Curso: {courseProg.current} / {courseProg.total}h
+                              Curso: {courseProg.formattedCurrent} / {courseProg.formattedTotal}
                               {courseProg.finalized && (
                                 <span className="bg-green-500 text-white px-1 rounded-[2px] text-[7px] font-bold">
                                   FINALIZADO
