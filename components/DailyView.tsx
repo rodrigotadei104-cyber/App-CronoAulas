@@ -195,15 +195,21 @@ export const DailyView: React.FC<DailyViewProps> = ({ currentDate, aulas, onEdit
                 }}
               >
                 <div className={`flex justify-between items-start ${isVeryShort ? 'w-full' : ''}`}>
-                  <div className="font-semibold text-xs sm:text-sm text-gray-800 line-clamp-1 truncate print:text-black">
-                    {aula.materia}
+                  <div className="font-bold text-xs sm:text-sm text-gray-900 line-clamp-1 truncate print:text-black uppercase">
+                    {aula.curso}
                   </div>
                   {aula.status === 'cancelada' && !isVeryShort && <AlertCircle size={14} className="text-red-500 flex-shrink-0" />}
                 </div>
 
+                {!isVeryShort && (
+                  <div className="text-[10px] sm:text-xs font-medium text-gray-700 line-clamp-1 truncate">
+                    {aula.materia}
+                  </div>
+                )}
+
                 {!isShort && (
                   <>
-                    <div className="text-[10px] sm:text-xs text-gray-600 mt-0.5 flex items-center gap-1 truncate print:text-gray-700">
+                    <div className="text-[10px] sm:text-xs text-gray-600 mt-1 flex items-center gap-1 truncate print:text-gray-700">
                       <Clock size={10} className="flex-shrink-0" />
                       {aula.horarioInicio} - {aula.horarioFim}
                     </div>
@@ -218,20 +224,23 @@ export const DailyView: React.FC<DailyViewProps> = ({ currentDate, aulas, onEdit
                 )}
 
                 {isShort && !isVeryShort && (
-                  <div className="text-[10px] text-gray-600 mt-0.5 flex items-center gap-1 print:text-gray-700">
-                    {aula.horarioInicio} - {aula.sala}
+                  <div className="text-[10px] text-gray-600 mt-1 flex items-center gap-1 print:text-gray-700">
+                    <Clock size={10} className="flex-shrink-0" />
+                    {aula.horarioInicio}
+                    <span className="mx-0.5">•</span>
+                    {aula.sala}
                   </div>
                 )}
 
                 {isVeryShort && (
-                  <div className="text-[10px] text-gray-500 ml-auto whitespace-nowrap print:text-gray-600">
+                  <div className="text-[9px] text-gray-500 ml-auto whitespace-nowrap print:text-gray-600">
                     {aula.horarioInicio}
                   </div>
                 )}
 
                 {/* Hide 'Agora' badge on print */}
                 {aula.status === 'em-andamento' && !isVeryShort && (
-                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-green-100 text-green-700 text-[9px] rounded-full font-medium print:hidden">
+                  <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-green-100 text-green-700 text-[9px] rounded-full font-medium print:hidden">
                     Agora
                   </div>
                 )}
