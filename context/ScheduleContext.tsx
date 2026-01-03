@@ -263,23 +263,53 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const fetchAulas = async () => {
-    const { data, error } = await supabase.from('aulas').select('*');
-    if (error) throw error;
-    if (data) setAulas(data.map(mapAulaFromDB));
+    if (!currentTenant) return;
+    console.log(`Fetching aulas for tenant: ${currentTenant}`);
+    const { data, error } = await supabase
+      .from('aulas')
+      .select('*')
+      .eq('tenant_id', currentTenant);
+
+    if (error) {
+      console.error('Error fetching aulas:', error);
+      throw error;
+    }
+
+    if (data) {
+      console.log(`Fetched ${data.length} aulas`);
+      setAulas(data.map(mapAulaFromDB));
+    }
   };
 
   const fetchInstrutores = async () => {
-    const { data, error } = await supabase.from('instrutores').select('*');
+    if (!currentTenant) return;
+    const { data, error } = await supabase
+      .from('instrutores')
+      .select('*')
+      .eq('tenant_id', currentTenant);
+
     if (error) throw error;
     if (data) setInstrutores(data);
   };
+
   const fetchCursos = async () => {
-    const { data, error } = await supabase.from('cursos').select('*');
+    if (!currentTenant) return;
+    const { data, error } = await supabase
+      .from('cursos')
+      .select('*')
+      .eq('tenant_id', currentTenant);
+
     if (error) throw error;
     if (data) setCursos(data);
   };
+
   const fetchMaterias = async () => {
-    const { data, error } = await supabase.from('materias').select('*');
+    if (!currentTenant) return;
+    const { data, error } = await supabase
+      .from('materias')
+      .select('*')
+      .eq('tenant_id', currentTenant);
+
     if (error) throw error;
     if (data) {
       setMaterias(data.map((m: any) => ({
