@@ -90,6 +90,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // --- Auth State ---
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isDemo, setIsDemo] = useState<boolean>(false);
+  const [currentTenant, setCurrentTenant] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile>({
     name: '',
     email: '',
@@ -133,7 +134,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // --- Initialization & Realtime ---
   useEffect(() => {
     // Check Active Session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setIsAuthenticated(true);
         if (session.user) {
@@ -144,11 +145,11 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             avatarInitials: name.substring(0, 2).toUpperCase()
           });
         }
-        fetchData();
+        await fetchUserTenant();
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         setIsAuthenticated(true);
         setIsDemo(false);
@@ -158,10 +159,11 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           email: session.user.email || '',
           avatarInitials: name.substring(0, 2).toUpperCase()
         });
-        fetchData();
+        await fetchUserTenant();
       } else if (!isDemo) {
         setIsAuthenticated(false);
         setAulas([]);
+        setCurrentTenant(null);
       }
     });
 
@@ -194,9 +196,44 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [isDemo]);
 
+  // Fetch data when tenant is loaded
+  useEffect(() => {
+    if (currentTenant && isAuthenticated && !isDemo) {
+      fetchData();
+    }
+  }, [currentTenant, isAuthenticated, isDemo]);
+
   // --- Fetchers ---
+  const fetchUserTenant = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('user_tenants')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Erro ao buscar tenant:', error);
+        return;
+      }
+
+      if (data) {
+        setCurrentTenant(data.tenant_id);
+      }
+    } catch (e: any) {
+      console.error('Erro ao buscar tenant do usuário:', e);
+    }
+  };
+
   const fetchData = async () => {
     if (isDemo) return;
+    if (!currentTenant) {
+      console.log('Aguardando tenant...');
+      return;
+    }
     try {
       await Promise.all([
         fetchAulas(),
@@ -312,8 +349,17 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       showNotification('Aula criada (Demo)', 'success');
       return;
     }
-    const dbPayload = mapAulaToDB(newAula);
-    // Use select().single() to get the generated ID
+
+    if (!currentTenant) {
+      showNotification('Erro: Tenant não identificado', 'error');
+      return;
+    }
+
+    const dbPayload = {
+      ...mapAulaToDB(newAula),
+      tenant_id: currentTenant
+    };
+
     const { data, error } = await supabase.from('aulas').insert(dbPayload).select().single();
     if (error) {
       console.error(error);
@@ -323,7 +369,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setAulas(prev => [...prev, createdAula]);
       showNotification('Aula criada com sucesso!', 'success');
     }
-  }, [isDemo, showNotification]);
+  }, [isDemo, currentTenant, showNotification]);
 
   const updateAula = useCallback(async (updatedAula: Aula) => {
     if (isDemo) {
@@ -373,7 +419,18 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       showNotification('Instrutor adicionado (Demo)', 'success');
       return;
     }
-    const { data: newRow, error } = await supabase.from('instrutores').insert(data).select().single();
+
+    if (!currentTenant) {
+      showNotification('Erro: Tenant não identificado', 'error');
+      return;
+    }
+
+    const { data: newRow, error } = await supabase
+      .from('instrutores')
+      .insert({ ...data, tenant_id: currentTenant })
+      .select()
+      .single();
+
     if (error) {
       console.error(error);
       showNotification('Erro ao adicionar instrutor', 'error');
@@ -381,7 +438,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setInstrutores(prev => [...prev, newRow]);
       showNotification('Instrutor adicionado!', 'success');
     }
-  }, [isDemo, showNotification]);
+  }, [isDemo, currentTenant, showNotification]);
 
   const deleteInstrutor = useCallback(async (id: string) => {
     if (isDemo) {
@@ -406,10 +463,17 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       showNotification('Curso adicionado (Demo)', 'success');
       return;
     }
+
+    if (!currentTenant) {
+      showNotification('Erro: Tenant não identificado', 'error');
+      return;
+    }
+
     const { data: newRow, error } = await supabase.from('cursos').insert({
       nome: data.nome,
       cor: data.cor,
-      carga_horaria: data.cargaHoraria
+      carga_horaria: data.cargaHoraria,
+      tenant_id: currentTenant
     }).select().single();
 
     if (error) {
@@ -425,7 +489,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setCursos(prev => [...prev, mappedCurso]);
       showNotification('Curso adicionado!', 'success');
     }
-  }, [isDemo, showNotification]);
+  }, [isDemo, currentTenant, showNotification]);
 
   const deleteCurso = useCallback(async (id: string) => {
     if (isDemo) {
@@ -450,10 +514,17 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       showNotification('Matéria adicionada (Demo)', 'success');
       return;
     }
+
+    if (!currentTenant) {
+      showNotification('Erro: Tenant não identificado', 'error');
+      return;
+    }
+
     const { data: newRow, error } = await supabase.from('materias').insert({
       nome: data.nome,
       curso_id: data.cursoId,
-      carga_horaria: data.cargaHoraria
+      carga_horaria: data.cargaHoraria,
+      tenant_id: currentTenant
     }).select().single();
 
     if (error) {
@@ -469,7 +540,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setMaterias(prev => [...prev, mappedMateria]);
       showNotification('Matéria adicionada!', 'success');
     }
-  }, [isDemo, showNotification]);
+  }, [isDemo, currentTenant, showNotification]);
 
   const deleteMateria = useCallback(async (id: string) => {
     if (isDemo) {
