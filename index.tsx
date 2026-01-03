@@ -16,3 +16,19 @@ root.render(
     </ScheduleProvider>
   </React.StrictMode>
 );
+
+// --- AGGRESSIVE SERVICE WORKER UNREGISTRATION ---
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function (registrations) {
+    for (let registration of registrations) {
+      console.log('Unregistering found service worker:', registration);
+      registration.unregister();
+    }
+  });
+
+  // Force reload if controller changes (meaning SW was removed)
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('Controller changed, reloading page...');
+    window.location.reload();
+  });
+}
