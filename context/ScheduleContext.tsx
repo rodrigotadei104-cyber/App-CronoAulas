@@ -207,24 +207,39 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const fetchUserTenant = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('Nenhum usuário autenticado');
+        return;
+      }
+
+      console.log('Buscando tenant para usuário:', user.email);
 
       const { data, error } = await supabase
         .from('user_tenants')
         .select('tenant_id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Erro ao buscar tenant:', error);
+        // Fallback: usar tenant padrão
+        console.log('Usando tenant padrão como fallback');
+        setCurrentTenant('00000000-0000-0000-0000-000000000001');
         return;
       }
 
-      if (data) {
+      if (data && data.tenant_id) {
+        console.log('Tenant encontrado:', data.tenant_id);
         setCurrentTenant(data.tenant_id);
+      } else {
+        console.log('Nenhum tenant encontrado, usando padrão');
+        // Fallback: usar tenant padrão
+        setCurrentTenant('00000000-0000-0000-0000-000000000001');
       }
     } catch (e: any) {
       console.error('Erro ao buscar tenant do usuário:', e);
+      // Fallback: usar tenant padrão
+      setCurrentTenant('00000000-0000-0000-0000-000000000001');
     }
   };
 
