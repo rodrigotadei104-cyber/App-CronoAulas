@@ -13,6 +13,9 @@ interface ScheduleContextType {
   enterDemoMode: () => void;
   isDemo: boolean;
 
+  // Debug / Recovery
+  fetchUserTenant: (userId?: string) => Promise<void>;
+
   // Data
   aulas: Aula[];
   instrutores: Instrutor[];
@@ -739,6 +742,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         login,
         register,
         logout,
+        fetchUserTenant,
         aulas,
         instrutores,
         cursos,

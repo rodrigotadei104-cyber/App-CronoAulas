@@ -107,27 +107,58 @@ const App: React.FC = () => {
 
   // --- DEBUG OVERLAY ---
   const DebugOverlay = () => {
-    const { isAuthenticated, currentTenant, aulas, userProfile } = useSchedule();
+    const { isAuthenticated, currentTenant, aulas, userProfile, fetchUserTenant } = useSchedule();
     const [isOpen, setIsOpen] = React.useState(false); // Default closed
+    const [isRepairing, setIsRepairing] = React.useState(false);
 
     if (process.env.NODE_ENV !== 'production' && !window.location.host.includes('vercel')) return null; // Show on vercel
+
+    const handleRepair = async () => {
+      setIsRepairing(true);
+      try {
+        console.log('Tentando reparar tenant manualmente...');
+        if (userProfile?.email) {
+          // Try to force fetch, passing undefined to use current auth user
+          await fetchUserTenant();
+          alert('Tentativa de reparo concluída. Verifique se o Tenant ID mudou.');
+        } else {
+          alert('Você precisa estar logado para reparar.');
+        }
+      } catch (error) {
+        alert('Erro ao reparar: ' + error);
+      } finally {
+        setIsRepairing(false);
+      }
+    };
 
     return (
       <div className="fixed bottom-4 left-4 z-[9999] font-mono text-xs">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="bg-red-600 text-white px-3 py-1 rounded shadow hover:bg-red-700"
+          className="bg-red-600 text-white px-3 py-1 rounded shadow hover:bg-red-700 font-bold"
         >
           {isOpen ? 'Close Debug' : 'Debug Info'}
         </button>
 
         {isOpen && (
-          <div className="bg-black/90 text-green-400 p-4 rounded mt-2 shadow-xl border border-green-900 max-w-sm overflow-auto">
+          <div className="bg-black/95 text-green-400 p-4 rounded mt-2 shadow-xl border border-green-900 max-w-sm overflow-auto">
+            <h3 className="text-white font-bold mb-2 border-b border-gray-700 pb-1">Diagnóstico</h3>
             <p><strong className="text-white">Status:</strong> {isAuthenticated ? 'Authenticated' : 'Logged Out'}</p>
             <p><strong className="text-white">User:</strong> {userProfile?.email || 'None'}</p>
-            <p><strong className="text-white">Tenant ID:</strong> {currentTenant || 'NULL'}</p>
+            <p><strong className="text-white">Tenant ID:</strong> <span className={!currentTenant ? "text-red-500 font-bold" : "text-green-400"}>{currentTenant || 'NULL (ERRO)'}</span></p>
             <p><strong className="text-white">Aulas Loaded:</strong> {aulas.length}</p>
             <p className="mt-2 text-gray-500">Timestamp: {new Date().toLocaleTimeString()}</p>
+
+            <div className="mt-4 pt-2 border-t border-gray-700">
+              <button
+                onClick={handleRepair}
+                disabled={isRepairing || !isAuthenticated}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-1 px-2 rounded mb-1"
+              >
+                {isRepairing ? 'Reparando...' : 'FORÇAR RECUPERAÇÃO DE DADOS'}
+              </button>
+              <p className="text-[10px] text-gray-400 text-center">Clique se "Aulas" estiver 0</p>
+            </div>
           </div>
         )}
       </div>
