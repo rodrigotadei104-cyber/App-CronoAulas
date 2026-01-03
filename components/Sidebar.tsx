@@ -13,7 +13,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onNewClass, onOpenSettings, isOpen }) => {
   const { logout } = useSchedule();
-  
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'daily', label: 'Diário', icon: Calendar },
@@ -23,14 +23,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onN
   ];
 
   const handleLogout = () => {
-      if (window.confirm("Tem certeza que deseja sair?")) {
-          logout();
-      }
+    if (window.confirm("Tem certeza que deseja sair?")) {
+      logout();
+    }
   };
 
   return (
-    <aside 
-        className={`
+    <aside
+      className={`
             fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out
             ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             dark:bg-slate-800 dark:border-slate-700
@@ -44,12 +44,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onN
           <span className="text-xl font-bold text-gray-800 tracking-tight dark:text-white">CronoAulas</span>
         </div>
 
-        <button 
-            onClick={onNewClass}
-            className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors shadow-sm mb-6"
+        <button
+          onClick={onNewClass}
+          className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors shadow-sm mb-6"
         >
-            <Plus size={20} />
-            <span>Nova Aula</span>
+          <Plus size={20} />
+          <span>Nova Aula</span>
         </button>
 
         <nav className="space-y-1 flex-1">
@@ -62,9 +62,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onN
                 onClick={() => onChangeView(item.id as ViewMode)}
                 className={`
                     w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                    ${isActive 
-                        ? 'bg-blue-50 text-blue-700 dark:bg-slate-700 dark:text-blue-400' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-slate-700 dark:hover:text-gray-200'}
+                    ${isActive
+                    ? 'bg-blue-50 text-blue-700 dark:bg-slate-700 dark:text-blue-400'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-slate-700 dark:hover:text-gray-200'}
                 `}
               >
                 <Icon size={18} />
@@ -75,20 +75,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onN
         </nav>
 
         <div className="border-t border-gray-100 pt-4 space-y-1 dark:border-slate-700">
-             <button 
-                onClick={onOpenSettings}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors dark:text-gray-400 dark:hover:bg-slate-700 dark:hover:text-gray-200"
-             >
-                <Settings size={18} />
-                Configurações
-             </button>
-             <button 
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-             >
-                <LogOut size={18} />
-                Sair
-             </button>
+          <button
+            onClick={onOpenSettings}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors dark:text-gray-400 dark:hover:bg-slate-700 dark:hover:text-gray-200"
+          >
+            <Settings size={18} />
+            Configurações
+          </button>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+          >
+            <LogOut size={18} />
+            Sair
+          </button>
+
+          {isOpen && (
+            <div className="mt-4 px-2 py-1 text-xs text-center text-gray-400 font-mono border border-gray-100 rounded bg-gray-50 dark:bg-slate-900/50 dark:border-slate-700 dark:text-slate-500">
+              {/* Only show version if sidebar is open to preserve layout */}
+              Build: v1.0.6-DEBUG
+            </div>
+          )}
         </div>
       </div>
     </aside>

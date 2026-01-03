@@ -9,10 +9,10 @@ import { ClassModal } from './components/ClassModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginPage } from './components/LoginPage';
 import { Aula, ViewMode } from './types';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Search, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Search,
   Menu,
   Download,
   Filter,
@@ -26,12 +26,12 @@ import { format, addDays, subDays, addMonths, subMonths, addYears, subYears } fr
 import { ptBR } from 'date-fns/locale';
 
 const App: React.FC = () => {
-  const { 
+  const {
     isAuthenticated,
-    viewMode, 
-    setViewMode, 
-    currentDate, 
-    setCurrentDate, 
+    viewMode,
+    setViewMode,
+    currentDate,
+    setCurrentDate,
     filteredAulas,
     stats,
     aulas,
@@ -52,7 +52,7 @@ const App: React.FC = () => {
 
   // If not authenticated, show Login Page
   if (!isAuthenticated) {
-      return <LoginPage />;
+    return <LoginPage />;
   }
 
   const handleNavigate = (direction: 'prev' | 'next') => {
@@ -88,181 +88,213 @@ const App: React.FC = () => {
     setEditingAula(null);
     setIsModalOpen(true);
   };
-  
+
   const handleDateSelection = (date: Date) => {
-      setCurrentDate(date);
-      setViewMode('daily');
+    setCurrentDate(date);
+    setViewMode('daily');
   }
 
   const getDateLabel = () => {
-     if (viewMode === 'annual') return format(currentDate, 'yyyy');
-     if (viewMode === 'monthly' || viewMode === 'dashboard') return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
-     if (viewMode === 'registrations') return 'Gerenciamento';
-     return format(currentDate, "dd 'de' MMMM", { locale: ptBR });
+    if (viewMode === 'annual') return format(currentDate, 'yyyy');
+    if (viewMode === 'monthly' || viewMode === 'dashboard') return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
+    if (viewMode === 'registrations') return 'Gerenciamento';
+    return format(currentDate, "dd 'de' MMMM", { locale: ptBR });
   };
 
   const handlePrint = () => {
-      window.print();
+    window.print();
+  };
+
+  // --- DEBUG OVERLAY ---
+  const DebugOverlay = () => {
+    const { isAuthenticated, currentTenant, aulas, userProfile } = useSchedule();
+    const [isOpen, setIsOpen] = React.useState(false); // Default closed
+
+    if (process.env.NODE_ENV !== 'production' && !window.location.host.includes('vercel')) return null; // Show on vercel
+
+    return (
+      <div className="fixed bottom-4 left-4 z-[9999] font-mono text-xs">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="bg-red-600 text-white px-3 py-1 rounded shadow hover:bg-red-700"
+        >
+          {isOpen ? 'Close Debug' : 'Debug Info'}
+        </button>
+
+        {isOpen && (
+          <div className="bg-black/90 text-green-400 p-4 rounded mt-2 shadow-xl border border-green-900 max-w-sm overflow-auto">
+            <p><strong className="text-white">Status:</strong> {isAuthenticated ? 'Authenticated' : 'Logged Out'}</p>
+            <p><strong className="text-white">User:</strong> {userProfile?.email || 'None'}</p>
+            <p><strong className="text-white">Tenant ID:</strong> {currentTenant || 'NULL'}</p>
+            <p><strong className="text-white">Aulas Loaded:</strong> {aulas.length}</p>
+            <p className="mt-2 text-gray-500">Timestamp: {new Date().toLocaleTimeString()}</p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans transition-colors dark:bg-slate-900">
-      <Sidebar 
-        currentView={viewMode} 
+      <DebugOverlay />
+      <Sidebar
+        currentView={viewMode}
         onChangeView={(view) => {
-            setViewMode(view);
-            setIsSidebarOpen(false);
+          setViewMode(view);
+          setIsSidebarOpen(false);
         }}
         onNewClass={handleNewClass}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         isOpen={isSidebarOpen}
+        version="v1.0.5-DEBUG"
       />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full w-full relative">
-        
+
         {/* Toast Notification */}
         {notification && (
-            <div className="absolute top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
-                <div className={`
+          <div className="absolute top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
+            <div className={`
                     flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border
                     ${notification.type === 'success' ? 'bg-white border-green-200 text-green-800 dark:bg-slate-800 dark:border-green-900 dark:text-green-300' : ''}
                     ${notification.type === 'error' ? 'bg-white border-red-200 text-red-800 dark:bg-slate-800 dark:border-red-900 dark:text-red-300' : ''}
                     ${notification.type === 'info' ? 'bg-white border-blue-200 text-blue-800 dark:bg-slate-800 dark:border-blue-900 dark:text-blue-300' : ''}
                 `}>
-                    {notification.type === 'success' && <CheckCircle size={20} className="text-green-500" />}
-                    {notification.type === 'error' && <AlertTriangle size={20} className="text-red-500" />}
-                    {notification.type === 'info' && <Info size={20} className="text-blue-500" />}
-                    
-                    <span className="font-medium text-sm">{notification.message}</span>
-                    
-                    <button onClick={closeNotification} className="ml-2 hover:opacity-70">
-                        <X size={16} />
-                    </button>
-                </div>
+              {notification.type === 'success' && <CheckCircle size={20} className="text-green-500" />}
+              {notification.type === 'error' && <AlertTriangle size={20} className="text-red-500" />}
+              {notification.type === 'info' && <Info size={20} className="text-blue-500" />}
+
+              <span className="font-medium text-sm">{notification.message}</span>
+
+              <button onClick={closeNotification} className="ml-2 hover:opacity-70">
+                <X size={16} />
+              </button>
             </div>
+          </div>
         )}
 
         {/* Header */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-10 transition-colors dark:bg-slate-800 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <button 
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-                className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg dark:text-gray-300 dark:hover:bg-slate-700"
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg dark:text-gray-300 dark:hover:bg-slate-700"
             >
-                <Menu size={24} />
+              <Menu size={24} />
             </button>
-            
+
             {viewMode !== 'registrations' && (
-                <div className="flex items-center bg-gray-100 rounded-lg p-1 dark:bg-slate-700">
-                <button 
-                    onClick={() => handleNavigate('prev')} 
-                    className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-600 transition-all dark:text-gray-300 dark:hover:bg-slate-600"
+              <div className="flex items-center bg-gray-100 rounded-lg p-1 dark:bg-slate-700">
+                <button
+                  onClick={() => handleNavigate('prev')}
+                  className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-600 transition-all dark:text-gray-300 dark:hover:bg-slate-600"
                 >
-                    <ChevronLeft size={18} />
+                  <ChevronLeft size={18} />
                 </button>
                 <span className="w-40 text-center font-semibold text-gray-700 capitalize text-sm sm:text-base dark:text-gray-200">
-                    {getDateLabel()}
+                  {getDateLabel()}
                 </span>
-                <button 
-                    onClick={() => handleNavigate('next')} 
-                    className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-600 transition-all dark:text-gray-300 dark:hover:bg-slate-600"
+                <button
+                  onClick={() => handleNavigate('next')}
+                  className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-600 transition-all dark:text-gray-300 dark:hover:bg-slate-600"
                 >
-                    <ChevronRight size={18} />
+                  <ChevronRight size={18} />
                 </button>
-                </div>
+              </div>
             )}
-            
+
             {viewMode !== 'registrations' && (
-                <button 
-                    onClick={() => setCurrentDate(new Date())}
-                    className="hidden sm:block text-sm font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 border border-blue-200 rounded-md hover:bg-blue-50 transition dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/30"
-                >
-                    Hoje
-                </button>
+              <button
+                onClick={() => setCurrentDate(new Date())}
+                className="hidden sm:block text-sm font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 border border-blue-200 rounded-md hover:bg-blue-50 transition dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/30"
+              >
+                Hoje
+              </button>
             )}
           </div>
 
           <div className="flex items-center gap-3">
-             {/* Search Bar */}
-             {viewMode !== 'registrations' && (
-                 <div className="hidden md:flex items-center bg-gray-100 rounded-lg px-3 py-2 w-64 border border-transparent focus-within:border-blue-300 focus-within:bg-white transition-all dark:bg-slate-700 dark:focus-within:bg-slate-600 dark:focus-within:border-blue-500">
-                    <Search size={18} className="text-gray-400 dark:text-gray-300" />
-                    <input 
-                        type="text" 
-                        placeholder="Buscar aula, instrutor..." 
-                        className="bg-transparent border-none outline-none text-sm ml-2 w-full text-gray-700 placeholder-gray-400 dark:text-gray-200 dark:placeholder-gray-500"
-                        value={filters.search}
-                        onChange={(e) => setFilters({...filters, search: e.target.value})}
-                    />
-                 </div>
-             )}
+            {/* Search Bar */}
+            {viewMode !== 'registrations' && (
+              <div className="hidden md:flex items-center bg-gray-100 rounded-lg px-3 py-2 w-64 border border-transparent focus-within:border-blue-300 focus-within:bg-white transition-all dark:bg-slate-700 dark:focus-within:bg-slate-600 dark:focus-within:border-blue-500">
+                <Search size={18} className="text-gray-400 dark:text-gray-300" />
+                <input
+                  type="text"
+                  placeholder="Buscar aula, instrutor..."
+                  className="bg-transparent border-none outline-none text-sm ml-2 w-full text-gray-700 placeholder-gray-400 dark:text-gray-200 dark:placeholder-gray-500"
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                />
+              </div>
+            )}
 
-             {viewMode !== 'registrations' && (
-                <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg md:hidden dark:text-gray-300 dark:hover:bg-slate-700">
-                    <Search size={20} />
-                </button>
-             )}
-             
-             {viewMode === 'daily' && (
-                 <button 
-                    onClick={handlePrint}
-                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg dark:text-gray-300 dark:hover:bg-slate-700"
-                    title="Imprimir Diário"
-                 >
-                    <Printer size={20} />
-                 </button>
-             )}
+            {viewMode !== 'registrations' && (
+              <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg md:hidden dark:text-gray-300 dark:hover:bg-slate-700">
+                <Search size={20} />
+              </button>
+            )}
 
-             <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg hidden sm:block dark:text-gray-300 dark:hover:bg-slate-700">
-                <Filter size={20} />
-             </button>
+            {viewMode === 'daily' && (
+              <button
+                onClick={handlePrint}
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg dark:text-gray-300 dark:hover:bg-slate-700"
+                title="Imprimir Diário"
+              >
+                <Printer size={20} />
+              </button>
+            )}
 
-             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-800">
-                {userProfile.avatarInitials}
-             </div>
+            <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg hidden sm:block dark:text-gray-300 dark:hover:bg-slate-700">
+              <Filter size={20} />
+            </button>
+
+            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-800">
+              {userProfile.avatarInitials}
+            </div>
           </div>
         </header>
 
         {/* View Content */}
         <main className="flex-1 overflow-hidden p-4 sm:p-6 relative dark:bg-slate-900">
           {viewMode === 'daily' && (
-            <DailyView 
-                currentDate={currentDate} 
-                aulas={filteredAulas} 
-                onEdit={handleEditAula}
+            <DailyView
+              currentDate={currentDate}
+              aulas={filteredAulas}
+              onEdit={handleEditAula}
             />
           )}
           {viewMode === 'monthly' && (
-            <MonthlyView 
-                currentDate={currentDate} 
-                aulas={filteredAulas}
-                onSelectDate={handleDateSelection}
-                onEditAula={handleEditAula}
+            <MonthlyView
+              currentDate={currentDate}
+              aulas={filteredAulas}
+              onSelectDate={handleDateSelection}
+              onEditAula={handleEditAula}
             />
           )}
           {(viewMode === 'dashboard' || viewMode === 'annual') && (
-            <Dashboard 
-                stats={stats} 
-                allAulas={aulas} 
-                currentDate={currentDate}
-                onNavigateToMonth={(date) => {
-                    setCurrentDate(date);
-                    setViewMode('monthly');
-                }}
+            <Dashboard
+              stats={stats}
+              allAulas={aulas}
+              currentDate={currentDate}
+              onNavigateToMonth={(date) => {
+                setCurrentDate(date);
+                setViewMode('monthly');
+              }}
             />
           )}
           {viewMode === 'registrations' && (
-              <RegistrationView />
+            <RegistrationView />
           )}
         </main>
       </div>
 
-      <ClassModal 
-        isOpen={isModalOpen} 
+      <ClassModal
+        isOpen={isModalOpen}
         onClose={() => {
-            setIsModalOpen(false);
-            setEditingAula(null);
+          setIsModalOpen(false);
+          setEditingAula(null);
         }}
         onSave={handleSaveAula}
         initialData={editingAula}

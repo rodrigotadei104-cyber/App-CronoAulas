@@ -334,6 +334,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const enterDemoMode = useCallback(() => {
     setIsDemo(true);
     setIsAuthenticated(true);
+    setCurrentTenant('demo-tenant-id'); // Set dummy tenant to satisfy strict checks
     setUserProfile({
       name: 'Visitante Demo',
       email: 'demo@cronoaulas.com',
