@@ -132,114 +132,121 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const closeNotification = useCallback(() => setNotification(null), []);
 
   // --- Initialization & Realtime ---
+  const [isInitialized, setIsInitialized] = useState(false);
+
   useEffect(() => {
-    // Check Active Session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        setIsAuthenticated(true);
-        if (session.user) {
+    // 1. Initial Session Check
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          console.log('Session restored:', session.user.email);
+          setIsAuthenticated(true);
+
           const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0];
           setUserProfile({
             name: name,
             email: session.user.email || '',
             avatarInitials: name.substring(0, 2).toUpperCase()
           });
-        }
-        await fetchUserTenant();
-      }
-    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
+          // 2. Fetch Tenant IMMEDIATELY after session
+          await fetchUserTenant(session.user.id);
+        } else {
+          console.log('No active session');
+          setIsAuthenticated(false);
+          setIsInitialized(true); // Initialized as 'logged out'
+        }
+      } catch (e) {
+        console.error('Auth initialization error:', e);
+        setIsInitialized(true);
+      }
+    };
+
+    initializeAuth();
+
+    // 3. Auth State Listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+
+      if (session?.user) {
         setIsAuthenticated(true);
         setIsDemo(false);
+
         const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0];
         setUserProfile({
           name: name,
           email: session.user.email || '',
           avatarInitials: name.substring(0, 2).toUpperCase()
         });
-        await fetchUserTenant();
+
+        // Don't fetch tenant again if we just did it in initializeAuth
+        // But do fetch if this is a new sign in
+        if (event === 'SIGNED_IN') {
+          await fetchUserTenant(session.user.id);
+        }
       } else if (!isDemo) {
         setIsAuthenticated(false);
         setAulas([]);
         setCurrentTenant(null);
+        setIsInitialized(true);
       }
     });
 
-    // Realtime Subscriptions (Only connect if not in demo)
-    let channels: any;
-    if (!isDemo) {
-      channels = supabase.channel('custom-all-channel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'aulas' }, (payload) => {
-          if (isDemo) return;
-          // Only rely on realtime for updates coming from OTHER clients
-          // We handle our own updates optimistically/immediately
-          if (payload.eventType === 'INSERT') {
-            const newAula = mapAulaFromDB(payload.new);
-            setAulas(prev => {
-              if (prev.some(a => String(a.id) === String(newAula.id))) return prev;
-              return [...prev, newAula];
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            setAulas(prev => prev.map(a => String(a.id) === String(payload.new.id) ? mapAulaFromDB(payload.new) : a));
-          } else if (payload.eventType === 'DELETE') {
-            setAulas(prev => prev.filter(a => String(a.id) !== String(payload.old.id)));
-          }
-        })
-        .subscribe();
-    }
-
     return () => {
       subscription.unsubscribe();
-      if (channels) supabase.removeChannel(channels);
     };
-  }, [isDemo]);
+  }, []);
 
-  // Fetch data when tenant is loaded
+  // 4. Data Fetching Effect - STRICT DEPENDENCY
   useEffect(() => {
-    if (currentTenant && isAuthenticated && !isDemo) {
+    if (isAuthenticated && currentTenant && !isDemo) {
+      console.log('Auth and Tenant ready. Fetching data...');
       fetchData();
+    } else {
+      console.log('Waiting for Auth/Tenant to be ready...', { isAuthenticated, currentTenant, isDemo });
     }
   }, [currentTenant, isAuthenticated, isDemo]);
 
   // --- Fetchers ---
-  const fetchUserTenant = async () => {
+  const fetchUserTenant = async (userId?: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.log('Nenhum usuário autenticado');
-        return;
+      let uid = userId;
+      if (!uid) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.log('Nenhum usuário autenticado para buscar tenant');
+          setIsInitialized(true);
+          return;
+        }
+        uid = user.id;
       }
 
-      console.log('Buscando tenant para usuário:', user.email);
+      console.log('Buscando tenant para usuário ID:', uid);
 
       const { data, error } = await supabase
         .from('user_tenants')
         .select('tenant_id')
-        .eq('user_id', user.id)
+        .eq('user_id', uid)
         .maybeSingle();
 
       if (error) {
         console.error('Erro ao buscar tenant:', error);
-        // Fallback: usar tenant padrão
         console.log('Usando tenant padrão como fallback');
         setCurrentTenant('00000000-0000-0000-0000-000000000001');
-        return;
-      }
-
-      if (data && data.tenant_id) {
-        console.log('Tenant encontrado:', data.tenant_id);
+      } else if (data && data.tenant_id) {
+        console.log('Tenant encontrado e setado:', data.tenant_id);
         setCurrentTenant(data.tenant_id);
       } else {
         console.log('Nenhum tenant encontrado, usando padrão');
-        // Fallback: usar tenant padrão
         setCurrentTenant('00000000-0000-0000-0000-000000000001');
       }
     } catch (e: any) {
       console.error('Erro ao buscar tenant do usuário:', e);
-      // Fallback: usar tenant padrão
       setCurrentTenant('00000000-0000-0000-0000-000000000001');
+    } finally {
+      setIsInitialized(true);
     }
   };
 
