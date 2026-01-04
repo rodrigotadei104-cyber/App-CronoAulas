@@ -218,13 +218,22 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       let uid = userId;
       if (!uid) {
+        // Try getUser first (secure, server-side validation)
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.log('Nenhum usuário autenticado para buscar tenant');
-          setIsInitialized(true);
-          return;
+        if (user) {
+          uid = user.id;
+        } else {
+          // Fallback to getSession (local storage, faster/resilient on F5)
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            console.log('User recovered via getSession fallback');
+            uid = session.user.id;
+          } else {
+            console.log('Nenhum usuário autenticado para buscar tenant');
+            setIsInitialized(true);
+            return;
+          }
         }
-        uid = user.id;
       }
 
       console.log('Buscando tenant para usuário ID:', uid);
