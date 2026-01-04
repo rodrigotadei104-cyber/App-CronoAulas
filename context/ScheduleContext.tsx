@@ -184,9 +184,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           avatarInitials: name.substring(0, 2).toUpperCase()
         });
 
-        // Don't fetch tenant again if we just did it in initializeAuth
-        // But do fetch if this is a new sign in
-        if (event === 'SIGNED_IN') {
+        // Fetch tenant on all session-establishing events to ensure persistence
+        if (['SIGNED_IN', 'INITIAL_SESSION', 'TOKEN_REFRESHED'].includes(event)) {
+          console.log(`Auth event ${event} detected, fetching tenant...`);
           await fetchUserTenant(session.user.id);
         }
       } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
