@@ -189,7 +189,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (event === 'SIGNED_IN') {
           await fetchUserTenant(session.user.id);
         }
-      } else if (!isDemo) {
+      } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        // Only clear data on explicit logout events to prevent F5 flicker
         setIsAuthenticated(false);
         setAulas([]);
         setCurrentTenant(null);
